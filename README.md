@@ -8,7 +8,7 @@ There're 3 main executable files: <code>AuthServer</code>, <code>Server</code> a
 First two files contains command line arguments. AuthServer (<code>authorization server port</code>),
 Server (<code>server port, authorization server ip, authorization server port</code>). 
 User reads arguments from <code>config.properties</code> file which includes information about both servers.
-Starting sequence of files is <code>AuthServer -> Server -> User</code>. First to files can be run through ide.
+Starting sequence of files is <code>AuthServer -> Server -> User</code>. First two files can be run through ide.
 For User simple make jar and run it through the console. Enjoy!
 
 if you've any questions about this project or if you find bugs :) put comments here or send me message on
