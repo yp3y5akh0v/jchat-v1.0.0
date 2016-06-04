@@ -27,7 +27,7 @@ public class ReqParser {
     }
 
     public static boolean passwordValidate(String password) {
-        return Pattern.matches("((?=.*[a-z])(?=.*\\d)(?=.*[A-Z])(?=.*[@#$%!]).{8,40})", password);
+        return Pattern.matches("((?=.*[a-z])(?=.*\\d)(?=.*[A-Z])(?=.*[@#$%]).{8,40})", password);
     }
 
     public static MessageReqPackage parse(String request) {
