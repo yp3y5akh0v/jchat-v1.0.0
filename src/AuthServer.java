@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,16 +40,15 @@ public class AuthServer {
     }
 
     public static void main(String[] args) {
-        PrintWriter out = new PrintWriter(System.out, true);
         if (args.length != 1) {
-            out.println("Pass argument: authServerPort");
+            System.out.println("Pass argument: authServerPort");
             return;
         }
         AuthServer authServer = getInstance();
         authServer.authServerPort = Integer.parseInt(args[0]);
         if (!authServer.open(authServer.authServerPort))
             return;
-        out.println("Ok");
+        System.out.println("Ok");
         Socket socket;
         while ((socket = authServer.listening()) != null) {
             AuthServerThread authServerThread = new AuthServerThread(authServer, socket);
@@ -59,6 +57,5 @@ public class AuthServer {
                 authServerThread.start();
             }
         }
-        out.close();
     }
 }

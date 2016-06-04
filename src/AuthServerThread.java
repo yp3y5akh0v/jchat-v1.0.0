@@ -74,7 +74,7 @@ public class AuthServerThread extends Thread {
                 loginRepPackage.status = 1;
                 loginRepPackage.errorMessage = "username must have length at least 3 characters long, " +
                         "password must have at least one digit, one lower case character, " +
-                        "one upper case character, special character from [ @ # $ % ! . ] and length 8";
+                        "one upper case character, special character from [ @ # $ % . ] and length 8";
             }
             socket.println(loginRepPackage.pack());
             return false;
