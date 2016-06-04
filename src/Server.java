@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,16 +53,15 @@ public final class Server {
     }
 
     public static void main(String[] args) {
-        PrintWriter out = new PrintWriter(System.out, true);
         if (args.length != 3) {
-            out.println("Pass 3 arguments: serverPort, authorizationIP, authorizationPort");
+            System.out.println("Pass 3 arguments: serverPort, authorizationIP, authorizationPort");
             return;
         }
         Server server = getInstance();
         if (!server.open(Integer.parseInt(args[0])))
             return;
         while ((server.authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
-        out.println("Ok");
+        System.out.println("Ok");
         Socket socket;
         while ((socket = server.listening()) != null) {
             synchronized (server.objectAuthSocket) {
@@ -74,6 +72,5 @@ public final class Server {
             server.group.addUser(null, serverThread.getAddress(), serverThread);
             serverThread.start();
         }
-        out.close();
     }
 }
