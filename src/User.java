@@ -15,20 +15,8 @@ public class User {
 
     public String username, password;
     public Socket socketServer;
-
     public String request = "";
     public final Object objectRequest = new Object();
-
-    private static class UserHolder {
-        private static final User INSTANCE = new User();
-    }
-
-    private User() {
-    }
-
-    public static User getInstance() {
-        return UserHolder.INSTANCE;
-    }
 
     public static Socket connect(String ip, int port) {
         Socket socket = null;
@@ -39,9 +27,7 @@ public class User {
         return socket;
     }
 
-    public static void main(String[] args) {
-
-        User user = getInstance();
+    public void start() {
 
         ConsoleReader in;
         try {
@@ -52,10 +38,10 @@ public class User {
 
         try {
             in.setPrompt("username: ");
-            user.username = in.readLine();
+            username = in.readLine();
             in.flush();
             in.setPrompt("password: ");
-            user.password = in.readLine();
+            password = in.readLine();
             in.flush();
             in.setPrompt("");
         } catch (IOException e) {
@@ -83,7 +69,7 @@ public class User {
         String token;
         try (InputReader inAuth = new InputReader(socketAuth.getInputStream());
              PrintWriter outAuth = new PrintWriter(socketAuth.getOutputStream(), true)) {
-            outAuth.println(new LoginReqPackage(user.username, user.password, null).pack());
+            outAuth.println(new LoginReqPackage(username, password, null).pack());
             LoginRepPackage loginRepPackage = LoginRepPackage.unpack(inAuth.nextLine());
             if (loginRepPackage.status == 1) {
                 System.out.println(loginRepPackage.errorMessage);
@@ -94,12 +80,12 @@ public class User {
             return;
         }
 
-        while ((user.socketServer = connect(serverIP, serverPort)) == null) ;
+        while ((socketServer = connect(serverIP, serverPort)) == null) ;
 
         try {
-            InputReader inSocketServer = new InputReader(user.socketServer.getInputStream());
-            PrintWriter outSocketServer = new PrintWriter(user.socketServer.getOutputStream(), true);
-            outSocketServer.println(new LoginReqPackage(user.username, null, token).pack());
+            InputReader inSocketServer = new InputReader(socketServer.getInputStream());
+            PrintWriter outSocketServer = new PrintWriter(socketServer.getOutputStream(), true);
+            outSocketServer.println(new LoginReqPackage(username, null, token).pack());
             LoginRepPackage loginRepPackage = LoginRepPackage.unpack(inSocketServer.nextLine());
             if (loginRepPackage.status == 1) {
                 System.out.println(loginRepPackage.errorMessage);
@@ -110,19 +96,19 @@ public class User {
         }
 
         System.out.println();
-        UserThread userThread = new UserThread(user);
+        UserThread userThread = new UserThread(this);
         userThread.start();
         try {
             int c;
             while ((c = in.readCharacter()) != -1) {
                 if (c < 32 || c >= 127) {
                     if (c == 10 || c == 13) {
-                        synchronized (user.objectRequest) {
-                            MessageReqPackage messageRequestPackage = ReqParser.parse(user.request.trim());
+                        synchronized (objectRequest) {
+                            MessageReqPackage messageRequestPackage = ReqParser.parse(request.trim());
                             if (messageRequestPackage != null) {
                                 if (messageRequestPackage.containsKey("/cls")) {
                                     System.out.print("\r");
-                                    for (int i = 0; i < user.request.length(); i++) {
+                                    for (int i = 0; i < request.length(); i++) {
                                         System.out.print(" ");
                                         System.out.flush();
                                     }
@@ -133,25 +119,25 @@ public class User {
                                     System.exit(0);
                                 } else {
                                     System.out.println();
-                                    new PrintWriter(user.socketServer.getOutputStream(), true)
+                                    new PrintWriter(socketServer.getOutputStream(), true)
                                             .println(messageRequestPackage.pack());
                                 }
                             }
-                            user.request = "";
+                            request = "";
                         }
                     } else if (c == 8 || c == 127) {
-                        synchronized (user.objectRequest) {
-                            if (user.request.length() > 0) {
-                                user.request = user.request.substring(0, user.request.length() - 1);
+                        synchronized (objectRequest) {
+                            if (request.length() > 0) {
+                                request = request.substring(0, request.length() - 1);
                                 System.out.print("\b \b");
                                 System.out.flush();
                             }
                         }
                     }
                 } else {
-                    synchronized (user.objectRequest) {
+                    synchronized (objectRequest) {
                         char symbol = (char) c;
-                        user.request += symbol;
+                        request += symbol;
                         System.out.print(symbol);
                         System.out.flush();
                     }
@@ -160,9 +146,13 @@ public class User {
         } catch (IOException e) {
         } finally {
             try {
-                user.socketServer.close();
+                socketServer.close();
             } catch (IOException e) {
             }
         }
+    }
+
+    public static void main(String[] args) {
+        new User().start();
     }
 }
