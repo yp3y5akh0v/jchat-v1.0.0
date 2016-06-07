@@ -6,24 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class Server {
 
     public ServerSocket serverSocket;
-
     public Socket authSocket;
     public final Object objectAuthSocket = new Object();
-
     public Group group = new Group("serverGroup");
-
     public ConcurrentHashMap<String, Group> subGroups = new ConcurrentHashMap<>();
-
-    private static class ServerHolder {
-        private static final Server INSTANCE = new Server();
-    }
-
-    private Server() {
-    }
-
-    public static Server getInstance() {
-        return ServerHolder.INSTANCE;
-    }
 
     public boolean open(int port) {
         try {
@@ -52,25 +38,28 @@ public final class Server {
         return socket;
     }
 
-    public static void main(String[] args) {
+    public void start(String[] args) {
         if (args.length != 3) {
             System.out.println("Pass 3 arguments: serverPort, authorizationIP, authorizationPort");
             return;
         }
-        Server server = getInstance();
-        if (!server.open(Integer.parseInt(args[0])))
+        if (!open(Integer.parseInt(args[0])))
             return;
-        while ((server.authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
+        while ((authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
         System.out.println("Ok");
         Socket socket;
-        while ((socket = server.listening()) != null) {
-            synchronized (server.objectAuthSocket) {
-                if (server.authSocket.isClosed())
-                    while ((server.authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
+        while ((socket = listening()) != null) {
+            synchronized (objectAuthSocket) {
+                if (authSocket.isClosed())
+                    while ((authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
             }
-            ServerThread serverThread = new ServerThread(server, socket);
-            server.group.addUser(null, serverThread.getAddress(), serverThread);
+            ServerThread serverThread = new ServerThread(this, socket);
+            group.addUser(null, serverThread.getAddress(), serverThread);
             serverThread.start();
         }
+    }
+
+    public static void main(String[] args) {
+        new Server().start(args);
     }
 }
