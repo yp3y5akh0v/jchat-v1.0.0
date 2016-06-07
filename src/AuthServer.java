@@ -10,17 +10,6 @@ public class AuthServer {
     public ConcurrentHashMap<String, String> usernameToken = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, AuthServerThread> addressAuthServerThread = new ConcurrentHashMap<>();
 
-    private static class AuthServerHolder {
-        private static final AuthServer INSTANCE = new AuthServer();
-    }
-
-    private AuthServer() {
-    }
-
-    public static AuthServer getInstance() {
-        return AuthServerHolder.INSTANCE;
-    }
-
     public boolean open(int port) {
         try {
             serverSocket = new ServerSocket(port);
@@ -39,23 +28,26 @@ public class AuthServer {
         return socket;
     }
 
-    public static void main(String[] args) {
+    public void start(String[] args) {
         if (args.length != 1) {
             System.out.println("Pass argument: authServerPort");
             return;
         }
-        AuthServer authServer = getInstance();
-        authServer.authServerPort = Integer.parseInt(args[0]);
-        if (!authServer.open(authServer.authServerPort))
+        authServerPort = Integer.parseInt(args[0]);
+        if (!open(authServerPort))
             return;
         System.out.println("Ok");
         Socket socket;
-        while ((socket = authServer.listening()) != null) {
-            AuthServerThread authServerThread = new AuthServerThread(authServer, socket);
-            if (!authServer.addressAuthServerThread.containsKey(authServerThread.getAddress())) {
-                authServer.addressAuthServerThread.put(authServerThread.getAddress(), authServerThread);
+        while ((socket = listening()) != null) {
+            AuthServerThread authServerThread = new AuthServerThread(this, socket);
+            if (!addressAuthServerThread.containsKey(authServerThread.getAddress())) {
+                addressAuthServerThread.put(authServerThread.getAddress(), authServerThread);
                 authServerThread.start();
             }
         }
+    }
+
+    public static void main(String[] args) {
+        new AuthServer().start(args);
     }
 }
