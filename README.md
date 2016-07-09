@@ -11,4 +11,4 @@ First 2 files contain command line arguments. <code>AuthServer</code> has <code>
 Starting sequence of files is <code>AuthServer -> Server -> User</code>. First 2 files can be run through IDE.
 For <code>User</code> simple make jar file and run it through the console. Enjoy!
 
-if you have any questions about this project or if you find bugs :) put comments here or send me an email to <code>yuriy.peysakhov@gmail.com</code>
+if you have any questions about this project or if you find bugs :) leave comments here or send me an email to <code>yuriy.peysakhov@gmail.com</code>
