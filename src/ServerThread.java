@@ -14,13 +14,14 @@ public class ServerThread extends Thread {
 
     public String username;
     public Socket socket;
-    public final Object objectOutSocket = new Object();
+    public final Object objectOutSocket;
     public Server server;
     public CopyOnWriteArrayList<String> groupNames;
 
     public ServerThread(Server server, Socket socket) {
         this.server = server;
         this.socket = socket;
+        objectOutSocket = new Object();
         groupNames = new CopyOnWriteArrayList<>();
     }
 

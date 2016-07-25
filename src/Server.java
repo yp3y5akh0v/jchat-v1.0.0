@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,35 +6,14 @@ public final class Server {
 
     public ServerSocket serverSocket;
     public Socket authSocket;
-    public final Object objectAuthSocket = new Object();
-    public Group group = new Group("serverGroup");
-    public ConcurrentHashMap<String, Group> subGroups = new ConcurrentHashMap<>();
+    public final Object objectAuthSocket;
+    public Group group;
+    public ConcurrentHashMap<String, Group> subGroups;
 
-    public boolean open(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
-
-    public Socket listening() {
-        Socket socket = null;
-        try {
-            socket = serverSocket.accept();
-        } catch (IOException e) {
-        }
-        return socket;
-    }
-
-    public static Socket connect(String ip, int port) {
-        Socket socket = null;
-        try {
-            socket = new Socket(ip, port);
-        } catch (IOException e) {
-        }
-        return socket;
+    public Server() {
+        objectAuthSocket = new Object();
+        group = new Group("serverGroup");
+        subGroups = new ConcurrentHashMap<>();
     }
 
     public void start(String[] args) {
@@ -43,15 +21,15 @@ public final class Server {
             System.out.println("Pass 3 arguments: serverPort, authorizationIP, authorizationPort");
             return;
         }
-        if (!open(Integer.parseInt(args[0])))
+        if ((serverSocket = SocketUtils.open(Integer.parseInt(args[0]))) == null)
             return;
-        while ((authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
+        while ((authSocket = SocketUtils.connect(args[1], Integer.parseInt(args[2]))) == null) ;
         System.out.println("Ok");
         Socket socket;
-        while ((socket = listening()) != null) {
+        while ((socket = SocketUtils.listening(serverSocket)) != null) {
             synchronized (objectAuthSocket) {
                 if (authSocket.isClosed())
-                    while ((authSocket = connect(args[1], Integer.parseInt(args[2]))) == null) ;
+                    while ((authSocket = SocketUtils.connect(args[1], Integer.parseInt(args[2]))) == null) ;
             }
             ServerThread serverThread = new ServerThread(this, socket);
             group.addUser(null, serverThread.getAddress(), serverThread);

@@ -15,16 +15,12 @@ public class User {
 
     public String username, password;
     public Socket socketServer;
-    public String request = "";
-    public final Object objectRequest = new Object();
+    public String request;
+    public final Object objectRequest;
 
-    public static Socket connect(String ip, int port) {
-        Socket socket = null;
-        try {
-            socket = new Socket(ip, port);
-        } catch (IOException e) {
-        }
-        return socket;
+    public User() {
+        request = "";
+        objectRequest = new Object();
     }
 
     public void start() {
@@ -64,7 +60,7 @@ public class User {
         }
 
         Socket socketAuth;
-        while ((socketAuth = connect(authServerIP, authServerPort)) == null) ;
+        while ((socketAuth = SocketUtils.connect(authServerIP, authServerPort)) == null) ;
 
         String token;
         try (InputReader inAuth = new InputReader(socketAuth.getInputStream());
@@ -80,7 +76,7 @@ public class User {
             return;
         }
 
-        while ((socketServer = connect(serverIP, serverPort)) == null) ;
+        while ((socketServer = SocketUtils.connect(serverIP, serverPort)) == null) ;
 
         try {
             InputReader inSocketServer = new InputReader(socketServer.getInputStream());

@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,25 +6,12 @@ public class AuthServer {
 
     public ServerSocket serverSocket;
     public int authServerPort;
-    public ConcurrentHashMap<String, String> usernameToken = new ConcurrentHashMap<>();
-    public ConcurrentHashMap<String, AuthServerThread> addressAuthServerThread = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, String> usernameToken;
+    public ConcurrentHashMap<String, AuthServerThread> addressAuthServerThread;
 
-    public boolean open(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
-
-    public Socket listening() {
-        Socket socket = null;
-        try {
-            socket = serverSocket.accept();
-        } catch (IOException e) {
-        }
-        return socket;
+    public AuthServer() {
+        usernameToken = new ConcurrentHashMap<>();
+        addressAuthServerThread = new ConcurrentHashMap<>();
     }
 
     public void start(String[] args) {
@@ -34,11 +20,11 @@ public class AuthServer {
             return;
         }
         authServerPort = Integer.parseInt(args[0]);
-        if (!open(authServerPort))
+        if ((serverSocket = SocketUtils.open(authServerPort)) == null)
             return;
         System.out.println("Ok");
         Socket socket;
-        while ((socket = listening()) != null) {
+        while ((socket = SocketUtils.listening(serverSocket)) != null) {
             AuthServerThread authServerThread = new AuthServerThread(this, socket);
             if (!addressAuthServerThread.containsKey(authServerThread.getAddress())) {
                 addressAuthServerThread.put(authServerThread.getAddress(), authServerThread);
