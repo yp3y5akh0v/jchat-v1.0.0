@@ -1,4 +1,6 @@
 import jline.console.ConsoleReader;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.AnsiConsole;
 import reqrep.LoginRepPackage;
 import reqrep.LoginReqPackage;
 import reqrep.MessageReqPackage;
@@ -68,7 +70,9 @@ public class User {
             outAuth.println(new LoginReqPackage(username, password, null).pack());
             LoginRepPackage loginRepPackage = LoginRepPackage.unpack(inAuth.nextLine());
             if (loginRepPackage.status == 1) {
-                System.out.println(loginRepPackage.errorMessage);
+                AnsiConsole.systemInstall();
+                System.out.println(new Ansi().fg(Ansi.Color.RED).bold().a(loginRepPackage.errorMessage).reset());
+                AnsiConsole.systemUninstall();
                 return;
             }
             token = loginRepPackage.token;
@@ -83,11 +87,13 @@ public class User {
             PrintWriter outSocketServer = new PrintWriter(socketServer.getOutputStream(), true);
             outSocketServer.println(new LoginReqPackage(username, null, token).pack());
             LoginRepPackage loginRepPackage = LoginRepPackage.unpack(inSocketServer.nextLine());
+            AnsiConsole.systemInstall();
             if (loginRepPackage.status == 1) {
-                System.out.println(loginRepPackage.errorMessage);
+                System.out.println(new Ansi().fg(Ansi.Color.RED).bold().a(loginRepPackage.errorMessage).reset());
                 return;
             } else
-                System.out.println("Ok");
+                System.out.println(new Ansi().fg(Ansi.Color.GREEN).bold().a("Ok").reset());
+            AnsiConsole.systemUninstall();
         } catch (IOException e) {
         }
 
