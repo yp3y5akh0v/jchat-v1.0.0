@@ -1,3 +1,4 @@
+import org.fusesource.jansi.Ansi;
 import reqrep.LoginRepPackage;
 import reqrep.LoginReqPackage;
 import reqrep.MessageRepPackage;
@@ -58,7 +59,7 @@ public class ServerThread extends Thread {
         return socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
     }
 
-    public boolean recheck(String username, String token) {
+    public int recheck(String username, String token) {
         synchronized (server.objectAuthSocket) {
             try {
                 InputReader inAuthSocket = new InputReader(server.authSocket.getInputStream());
@@ -66,17 +67,16 @@ public class ServerThread extends Thread {
                 LoginReqPackage loginReqPackage = new LoginReqPackage(username, null, token);
                 outAuthSocket.println(loginReqPackage.pack());
                 LoginRepPackage loginRepPackage = LoginRepPackage.unpack(inAuthSocket.nextLine());
-                return loginRepPackage.status == 0;
+                return loginRepPackage.status == 0 ? 0 : 1;
             } catch (IOException e) {
-                return false;
+                return 3;
             }
         }
     }
 
     public void permissionToJoin(LoginRepPackage loginRepPackage) throws IOException {
         synchronized (objectOutSocket) {
-            PrintWriter outSocket = new PrintWriter(socket.getOutputStream(), true);
-            outSocket.println(loginRepPackage.pack());
+            new PrintWriter(socket.getOutputStream(), true).println(loginRepPackage.pack());
         }
     }
 
@@ -112,56 +112,76 @@ public class ServerThread extends Thread {
         if (!server.subGroups.containsKey(groupName)) {
             server.subGroups.put(groupName, new Group(groupName, username, getAddress(), this));
             groupNames.add(groupName);
-            echo(new MessageRepPackage(null, null, "group <" + groupName + "> was added"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Group ")
+                            .fg(Ansi.Color.GREEN).a("<" + groupName + ">")
+                            .fg(Ansi.Color.YELLOW).a(" was added").reset().toString()));
         } else
-            echo(new MessageRepPackage(null, null, "group <" + groupName + "> already exists"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Group ")
+                            .fg(Ansi.Color.GREEN).a("<" + groupName + ">")
+                            .fg(Ansi.Color.YELLOW).a(" already exists").reset().toString()));
     }
 
     public void deleteGroup(String groupPattern) {
         TreeSet<String> ownGroups = getOwnGroups(groupPattern);
         if (!ownGroups.isEmpty()) {
             for (String ownGroup : ownGroups) {
-                sendToGroup(ownGroup, new MessageRepPackage(null, ownGroup, "group <" + ownGroup +
-                        "> has no longer existed"));
+                sendToGroup(ownGroup, new MessageRepPackage(null, ownGroup,
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Group ")
+                                .fg(Ansi.Color.GREEN).a("<" + ownGroup + ">")
+                                .fg(Ansi.Color.YELLOW).a(" has no longer existed").reset().toString()));
                 server.subGroups.get(ownGroup).dispose();
                 server.subGroups.remove(ownGroup);
             }
         } else
-            echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                    groupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
     public void displayGroup(String groupPattern) {
         TreeSet<String> groups = getGroups(groupPattern);
         if (!groups.isEmpty()) {
-            echo(new MessageRepPackage(null, null, groups.toString().
-                    replaceAll("\\[", "<").
-                    replaceAll("\\]", ">").
-                    replaceAll(", ", ">\n<")));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.GREEN).a(groups.toString().
+                            replaceAll("\\[", "<").
+                            replaceAll("\\]", ">").
+                            replaceAll(", ", ">\n<")).reset().toString()
+            ));
         } else
-            echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                    groupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
     public void displayMyGroup(String myGroupPattern) {
         TreeSet<String> ownGroups = getOwnGroups(myGroupPattern);
         if (!ownGroups.isEmpty()) {
-            echo(new MessageRepPackage(null, null, ownGroups.toString().
-                    replaceAll("\\[", "<").
-                    replaceAll("\\]", ">").
-                    replaceAll(", ", ">\n<")));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.GREEN).a(ownGroups.toString().
+                            replaceAll("\\[", "<").
+                            replaceAll("\\]", ">").
+                            replaceAll(", ", ">\n<")).reset().toString()
+            ));
         } else
-            echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                    myGroupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + myGroupPattern + "'").reset().toString()));
     }
 
     public void displayUser(String usernamePattern) {
         TreeSet<String> users = getUsers(usernamePattern, server.group);
         if (!users.isEmpty()) {
-            echo(new MessageRepPackage(null, null, users.toString().replaceAll(", ", "]\n[")));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.GREEN).
+                            a(users.toString().replaceAll(", ", "]\n[")).reset().toString()
+            ));
         } else
-            echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                    usernamePattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+            ));
     }
 
     public void leaveGroup(String groupPattern) {
@@ -171,50 +191,110 @@ public class ServerThread extends Thread {
                 Group gr = server.subGroups.get(groupName);
                 if (gr.chiefUsername.equals(username)) {
                     sendToGroup(groupName, new MessageRepPackage(null, groupName,
-                            "chief [" + username + "] of the group <" + groupName + "> leaved\n" +
-                                    "group <" + groupName + "> has no longer existed"));
+                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Chief ")
+                                    .fg(Ansi.Color.GREEN).a("[" + username + "]")
+                                    .fg(Ansi.Color.YELLOW).a(" of the group ")
+                                    .fg(Ansi.Color.GREEN).a("<" + groupName + ">")
+                                    .fg(Ansi.Color.YELLOW).a(" leaved\nGroup ")
+                                    .fg(Ansi.Color.GREEN).a("<" + groupName + ">")
+                                    .fg(Ansi.Color.YELLOW).a(" has no longer existed")
+                                    .reset()
+                                    .toString()));
                     gr.dispose();
                     server.subGroups.remove(groupName);
                 } else {
                     sendToGroup(groupName, new MessageRepPackage(null, groupName,
-                            "user [" + username + "] leaved the group <" + groupName + ">"));
+                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("User ")
+                                    .fg(Ansi.Color.GREEN).a("[" + username + "]")
+                                    .fg(Ansi.Color.YELLOW).a(" leaved the group ")
+                                    .fg(Ansi.Color.GREEN).a("<" + groupName + ">")
+                                    .reset()
+                                    .toString()));
                     gr.deleteUser(username, getAddress());
                     this.groupNames.remove(groupName);
                 }
             }
         } else
-            echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                    groupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
     public void help() {
         String help =
-                "******************************************************************\n" +
-                        String.format("*%25s%40s\n", "/addgroup x", "add new group x   *") +
-                        String.format("*%25s%40s\n", "/deletegroup x", "delete groups x   *") +
-                        String.format("*%25s%40s\n", "/group x", "display groups x   *") +
-                        String.format("*%25s%40s\n", "/mygroup x", "display own groups x   *") +
-                        String.format("*%25s%40s\n", "/user x", "display users x   *") +
-                        String.format("*%25s%40s\n", "/send x", "send x to all users   *") +
-                        String.format("*%25s%40s\n", "/me", "info about me   *") +
-                        String.format("*%25s%40s\n", "/cls", "clear screen   *") +
-                        String.format("*%25s%40s\n", "/help", "help   *") +
-                        String.format("*%25s%40s\n", "/user x /send y", "send y to users x   *") +
-                        String.format("*%25s%40s\n", "/mygroup x /adduser y", "add users y to " +
-                                "the groups x   *") +
-                        String.format("*%25s%40s\n", "/mygroup x /deleteuser y", "delete users y " +
-                                "from the groups x   *") +
-                        String.format("*%25s%40s\n", "/group x /send y", "send y to the groups x" +
-                                "   *") +
-                        String.format("*%25s%40s\n", "/mygroup x /send y", "send y to the" +
-                                " own groups x   *") +
-                        String.format("*%25s%40s\n", "/mygroup x /user y", "get users y from " +
-                                "own groups x   *") +
-                        String.format("*%25s%40s\n", "/group x /user y", "get users y from " +
-                                "groups x   *") +
-                        String.format("*%25s%40s\n", "/leavegroup x", "leave the groups x   *") +
-                        String.format("*%25s%40s\n", "/exit", "exit the room   *") +
-                        "******************************************************************";
+                String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/addgroup x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("add new group x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/deletegroup x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("delete groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/group x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("display groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/mygroup x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("display own groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/user x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("display users x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/send x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("send x to all users").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/me").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("info about me").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/cls").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("clear screen").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/help").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("display a list of commands").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/user x /send y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("send y to users x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/mygroup x /adduser y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("add users y to the groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/mygroup x /deleteuser y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("delete users y from the groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/group x /send y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("send y to the groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/mygroup x /send y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("send y to the own groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/mygroup x /user y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("get users y from  own groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/group x /user y").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("get users y from groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/leavegroup x").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("leave the groups x").reset()
+                ) + String.format(
+                        "%35s%45s\n",
+                        new Ansi().bold().fg(Ansi.Color.GREEN).a("/exit").reset(),
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("exit the room").reset()
+                );
         echo(new MessageRepPackage(null, null, help));
     }
 
@@ -233,19 +313,31 @@ public class ServerThread extends Thread {
                             serverThread.groupNames.add(ownGroup);
                             ng.addUser(username, serverThread.getAddress(), serverThread);
                             sendToGroup(ownGroup, new MessageRepPackage(null, ownGroup,
-                                    "[" + username + "] joined the group <" + ownGroup + ">"));
+                                    new Ansi().bold().fg(Ansi.Color.GREEN).a("[" + username + "]")
+                                            .fg(Ansi.Color.YELLOW).a(" joined the group ")
+                                            .fg(Ansi.Color.GREEN).a("<" + ownGroup + ">")
+                                            .reset()
+                                            .toString())
+                            );
                             isAdded = true;
                         }
                     }
                 }
                 if (!isAdded)
-                    echo(new MessageRepPackage(null, null, "users weren't added"));
+                    echo(new MessageRepPackage(null, null,
+                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't added")
+                                    .reset()
+                                    .toString())
+                    );
             } else
-                echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                        usernamePattern + "'"));
+                echo(new MessageRepPackage(null, null,
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                ));
         } else
-            echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                    groupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
     public void deleteUserFromMyGroup(String usernamePattern, String groupPattern) {
@@ -262,7 +354,12 @@ public class ServerThread extends Thread {
                                     addressServerThread.get(server.group.usernameAddress.
                                     get(username));
                             sendToGroup(ownGroup, new MessageRepPackage(null, ownGroup,
-                                    "[" + username + "] leaved the group <" + ownGroup + ">"));
+                                    new Ansi().bold().fg(Ansi.Color.GREEN).a("[" + username + "]")
+                                            .fg(Ansi.Color.YELLOW).a(" leaved the group ")
+                                            .fg(Ansi.Color.GREEN).a("<" + ownGroup + ">")
+                                            .reset()
+                                            .toString())
+                            );
                             serverThread.groupNames.remove(ownGroup);
                             ng.deleteUser(username, serverThread.getAddress());
                             isDeleted = true;
@@ -270,13 +367,20 @@ public class ServerThread extends Thread {
                     }
                 }
                 if (!isDeleted)
-                    echo(new MessageRepPackage(null, null, "users weren't deleted"));
+                    echo(new MessageRepPackage(null, null,
+                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't deleted")
+                                    .reset()
+                                    .toString())
+                    );
             } else
-                echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                        usernamePattern + "'"));
+                echo(new MessageRepPackage(null, null,
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                ));
         } else
-            echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                    groupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
     public void displayUserFromMyGroup(String usernamePattern, String groupPattern) {
@@ -294,22 +398,32 @@ public class ServerThread extends Thread {
                         }
                     }
                     if (!userGroup.isEmpty()) {
-                        echo(new MessageRepPackage(null, null, "users by pattern '"
-                                + usernamePattern + "' from own group <"
-                                + ownGroup + ">:\n" + userGroup.toString().
-                                replaceAll(", ", "]\n[")));
+                        echo(new MessageRepPackage(null, null,
+                                new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users by pattern ")
+                                        .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'")
+                                        .fg(Ansi.Color.YELLOW).a(" from own group ")
+                                        .fg(Ansi.Color.GREEN).a("<" + ownGroup + ">:\n" + userGroup.toString().
+                                        replaceAll(", ", "]\n["))
+                                        .reset()
+                                        .toString())
+                        );
                     }
                 }
                 if (!isAnyUser) {
-                    echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                            usernamePattern + "'"));
+                    echo(new MessageRepPackage(null, null,
+                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                    .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                    ));
                 }
             } else
-                echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                        usernamePattern + "'"));
+                echo(new MessageRepPackage(null, null,
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                ));
         } else
-            echo(new MessageRepPackage(null, null, "own groups weren't found by pattern '" +
-                    groupPattern + "'"));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
     @Override
@@ -322,17 +436,19 @@ public class ServerThread extends Thread {
             username = loginReqPackage.username;
             server.group.addUser(username, getAddress(), this);
             LoginRepPackage loginRepPackage = new LoginRepPackage();
-            boolean r = recheck(username, loginReqPackage.token);
-            if (!r) {
+            int r;
+            while ((r = recheck(username, loginReqPackage.token)) == 3) ;
+            if (r == 1) {
                 loginRepPackage.status = 1;
                 loginRepPackage.errorMessage = "errorMessage";
-            } else
+            } else if (r == 0)
                 loginRepPackage.status = 0;
             permissionToJoin(loginRepPackage);
-            if (!r)
+            if (r == 1)
                 return;
             sendToAll(new MessageRepPackage(null, server.group.name,
-                    "[" + username + "] joined the room"));
+                    new Ansi().fg(Ansi.Color.GREEN).bold().a("[" + username + "]")
+                            .fg(Ansi.Color.YELLOW).a(" joined the room").reset().toString()));
             String request;
             while ((request = inSocket.nextLine()) != null) {
                 MessageReqPackage messageRequestPackage = MessageReqPackage.unpack(request);
@@ -359,8 +475,14 @@ public class ServerThread extends Thread {
                                     messageRequestPackage.get("/send")));
                         } else if (messageRequestPackage
                                 .containsKey("/me")) {
-                            echo(new MessageRepPackage(null, null, "username: [" + username + "], " +
-                                    "address: " + getAddress()));
+                            echo(new MessageRepPackage(null, null,
+                                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("username: ")
+                                            .fg(Ansi.Color.GREEN).a("[" + username + "]")
+                                            .fg(Ansi.Color.YELLOW).a(", address: ")
+                                            .fg(Ansi.Color.GREEN).a(getAddress())
+                                            .reset()
+                                            .toString())
+                            );
                         } else if (messageRequestPackage
                                 .containsKey("/leavegroup")) {
                             leaveGroup(messageRequestPackage.get("/leavegroup"));
@@ -405,23 +527,33 @@ public class ServerThread extends Thread {
                                                 }
                                             }
                                             if (!userGroup.isEmpty()) {
-                                                echo(new MessageRepPackage(null, null, "users by pattern '"
-                                                        + usernamePattern + "' from group <"
-                                                        + groupName + ">:\n" + userGroup.toString().
-                                                        replaceAll(", ", "]\n[")));
+                                                echo(new MessageRepPackage(null, null,
+                                                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users by pattern ")
+                                                                .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'")
+                                                                .fg(Ansi.Color.YELLOW).a(" from group ")
+                                                                .fg(Ansi.Color.GREEN).a("<" + groupName + ">:\n" +
+                                                                userGroup.toString().replaceAll(", ", "]\n["))
+                                                                .reset()
+                                                                .toString())
+                                                );
                                             }
                                         }
                                         if (!isAnyUser) {
-                                            echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                                                    usernamePattern + "'"));
+                                            echo(new MessageRepPackage(null, null,
+                                                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                                            .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                                            ));
                                         }
                                     } else
-                                        echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                                                usernamePattern + "'"));
+                                        echo(new MessageRepPackage(null, null,
+                                                new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                                        .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                                        ));
                                 }
                             } else
-                                echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                                        groupPattern + "'"));
+                                echo(new MessageRepPackage(null, null,
+                                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
+                                                .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
                         } else if (messageRequestPackage
                                 .containsKey("/send")) {
                             String message = messageRequestPackage.get("/send");
@@ -431,11 +563,20 @@ public class ServerThread extends Thread {
                                 ArrayList<String> users = new ArrayList<>(getUsers(usernamePattern, server.group));
                                 if (!users.isEmpty()) {
                                     sendToUsers(users, new MessageRepPackage(username, null, message));
-                                    echo(new MessageRepPackage(null, null, "[" + username + " -> " + users + "]: "
-                                            + message));
+                                    echo(new MessageRepPackage(null, null,
+                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("[")
+                                                    .fg(Ansi.Color.GREEN).a(username)
+                                                    .fg(Ansi.Color.YELLOW).a(" -> ")
+                                                    .fg(Ansi.Color.GREEN).a(users)
+                                                    .fg(Ansi.Color.YELLOW).a("]: ")
+                                                    .reset()
+                                                    .toString() + message)
+                                    );
                                 } else
-                                    echo(new MessageRepPackage(null, null, "users weren't found by pattern '" +
-                                            usernamePattern + "'"));
+                                    echo(new MessageRepPackage(null, null,
+                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                                    .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                                    ));
                             } else if (messageRequestPackage
                                     .containsKey("/group")) {
                                 String groupPattern = messageRequestPackage.get("/group");
@@ -443,8 +584,9 @@ public class ServerThread extends Thread {
                                 if (!groups.isEmpty()) {
                                     sendToGroups(groups, new MessageRepPackage(username, null, message));
                                 } else
-                                    echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                                            groupPattern + "'"));
+                                    echo(new MessageRepPackage(null, null,
+                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
+                                                    .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
                             } else if (messageRequestPackage
                                     .containsKey("/mygroup")) {
                                 String groupPattern = messageRequestPackage.get("/mygroup");
@@ -452,8 +594,9 @@ public class ServerThread extends Thread {
                                 if (!ownGroups.isEmpty()) {
                                     sendToGroups(ownGroups, new MessageRepPackage(username, null, message));
                                 } else
-                                    echo(new MessageRepPackage(null, null, "groups weren't found by pattern '" +
-                                            groupPattern + "'"));
+                                    echo(new MessageRepPackage(null, null,
+                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                                                    .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
                             }
                         }
                         break;
@@ -462,9 +605,10 @@ public class ServerThread extends Thread {
         } catch (Exception e) {
             if (username != null)
                 sendToAll(new MessageRepPackage(null, server.group.name,
-                        "[" + username + "] leaved the room"));
+                        new Ansi().fg(Ansi.Color.GREEN).bold().a("[" + username + "]")
+                                .fg(Ansi.Color.YELLOW).a(" leaved the room").reset().toString()));
         } finally {
-            recheck(username, ":p");
+            while (recheck(username, ":p") == 3) ;
             try {
                 if (inSocket != null)
                     inSocket.close();

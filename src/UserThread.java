@@ -32,31 +32,31 @@ public class UserThread extends Thread {
                         if (messageRepPackage.groupName == null) {
                             System.out.println(messageRepPackage.message);
                         } else {
-                            System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("Message from group ")
-                                    .fg(Ansi.Color.YELLOW).a("<" + messageRepPackage.groupName + ">").reset());
+                            System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("Message from group ")
+                                    .fg(Ansi.Color.GREEN).a("<" + messageRepPackage.groupName + ">").reset());
                             System.out.println(messageRepPackage.message);
                         }
                     } else {
                         if (messageRepPackage.username.equals(user.username)) {
                             if (messageRepPackage.groupName == null) {
-                                System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("ECHO").reset());
+                                System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("ECHO").reset());
                                 System.out.println(messageRepPackage.message);
                             } else {
-                                System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("Message from group ")
-                                        .fg(Ansi.Color.YELLOW).a("<" + messageRepPackage.groupName + ">").reset());
-                                System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("ECHO").reset());
+                                System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("Message from group ")
+                                        .fg(Ansi.Color.GREEN).a("<" + messageRepPackage.groupName + ">").reset());
+                                System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("ECHO").reset());
                                 System.out.println(messageRepPackage.message);
                             }
                         } else {
                             if (messageRepPackage.groupName == null) {
-                                System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("Message from user ")
-                                        .fg(Ansi.Color.YELLOW).a("[" + messageRepPackage.username + "]").reset());
+                                System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("Message from user ")
+                                        .fg(Ansi.Color.GREEN).a("[" + messageRepPackage.username + "]").reset());
                                 System.out.println(messageRepPackage.message);
                             } else {
-                                System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("Message from group ")
-                                        .fg(Ansi.Color.YELLOW).a("<" + messageRepPackage.groupName + ">").reset());
-                                System.out.println(new Ansi().bold().fg(Ansi.Color.CYAN).a("Message from user ")
-                                        .fg(Ansi.Color.YELLOW).a("[" + messageRepPackage.username + "]").reset());
+                                System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("Message from group ")
+                                        .fg(Ansi.Color.GREEN).a("<" + messageRepPackage.groupName + ">").reset());
+                                System.out.println(new Ansi().bold().fg(Ansi.Color.YELLOW).a("Message from user ")
+                                        .fg(Ansi.Color.GREEN).a("[" + messageRepPackage.username + "]").reset());
                                 System.out.println(messageRepPackage.message);
                             }
                         }
