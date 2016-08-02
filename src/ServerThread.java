@@ -426,6 +426,90 @@ public class ServerThread extends Thread {
                             .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
     }
 
+    public void sendMessageToMyGroup(String message, String groupPattern) {
+        ArrayList<String> ownGroups = new ArrayList<>(getOwnGroups(groupPattern));
+        if (!ownGroups.isEmpty()) {
+            sendToGroups(ownGroups, new MessageRepPackage(username, null, message));
+        } else
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
+    }
+
+    public void displayUserFromGroup(String usernamePattern, String groupPattern) {
+        TreeSet<String> groupNames = getGroups(groupPattern);
+        if (!groupNames.isEmpty()) {
+            TreeSet<String> usernames = getUsers(usernamePattern, server.group);
+            if (!usernames.isEmpty()) {
+                boolean isAnyUser = false;
+                for (String groupName : groupNames) {
+                    TreeSet<String> userGroup = new TreeSet<>();
+                    for (String username : usernames) {
+                        if (server.subGroups.get(groupName).containsUser(username)) {
+                            userGroup.add(username);
+                            isAnyUser = true;
+                        }
+                    }
+                    if (!userGroup.isEmpty()) {
+                        echo(new MessageRepPackage(null, null,
+                                new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users by pattern ")
+                                        .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'")
+                                        .fg(Ansi.Color.YELLOW).a(" from group ")
+                                        .fg(Ansi.Color.GREEN).a("<" + groupName + ">:\n" +
+                                        userGroup.toString().replaceAll(", ", "]\n["))
+                                        .reset()
+                                        .toString())
+                        );
+                    }
+                }
+                if (!isAnyUser) {
+                    echo(new MessageRepPackage(null, null,
+                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                    .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                    ));
+                }
+            } else
+                echo(new MessageRepPackage(null, null,
+                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                                .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+                ));
+
+        } else
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
+    }
+
+    public void sendMessageToGroup(String message, String groupPattern) {
+        ArrayList<String> groups = new ArrayList<>(getGroups(groupPattern));
+        if (!groups.isEmpty()) {
+            sendToGroups(groups, new MessageRepPackage(username, null, message));
+        } else
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
+    }
+
+    public void sendMessageToUser(String message, String usernamePattern) {
+        ArrayList<String> users = new ArrayList<>(getUsers(usernamePattern, server.group));
+        if (!users.isEmpty()) {
+            sendToUsers(users, new MessageRepPackage(username, null, message));
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("[")
+                            .fg(Ansi.Color.GREEN).a(username)
+                            .fg(Ansi.Color.YELLOW).a(" -> ")
+                            .fg(Ansi.Color.GREEN).a(users)
+                            .fg(Ansi.Color.YELLOW).a("]: ")
+                            .reset()
+                            .toString() + message)
+            );
+        } else
+            echo(new MessageRepPackage(null, null,
+                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
+                            .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
+            ));
+    }
+
     @Override
     public void run() {
 
@@ -507,96 +591,30 @@ public class ServerThread extends Thread {
                                     .containsKey("/user")) {
                                 displayUserFromMyGroup(messageRequestPackage.get("/user"),
                                         groupPattern);
+                            } else if (messageRequestPackage
+                                    .containsKey("/send")) {
+                                sendMessageToMyGroup(messageRequestPackage.get("/send"),
+                                        groupPattern);
                             }
                         } else if (messageRequestPackage
                                 .containsKey("/group")) {
                             String groupPattern = messageRequestPackage.get("/group");
-                            TreeSet<String> groupNames = getGroups(groupPattern);
-                            if (!groupNames.isEmpty()) {
-                                if (messageRequestPackage.containsKey("/user")) {
-                                    String usernamePattern = messageRequestPackage.get("/user");
-                                    TreeSet<String> usernames = getUsers(usernamePattern, server.group);
-                                    if (!usernames.isEmpty()) {
-                                        boolean isAnyUser = false;
-                                        for (String groupName : groupNames) {
-                                            TreeSet<String> userGroup = new TreeSet<>();
-                                            for (String username : usernames) {
-                                                if (server.subGroups.get(groupName).containsUser(username)) {
-                                                    userGroup.add(username);
-                                                    isAnyUser = true;
-                                                }
-                                            }
-                                            if (!userGroup.isEmpty()) {
-                                                echo(new MessageRepPackage(null, null,
-                                                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users by pattern ")
-                                                                .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'")
-                                                                .fg(Ansi.Color.YELLOW).a(" from group ")
-                                                                .fg(Ansi.Color.GREEN).a("<" + groupName + ">:\n" +
-                                                                userGroup.toString().replaceAll(", ", "]\n["))
-                                                                .reset()
-                                                                .toString())
-                                                );
-                                            }
-                                        }
-                                        if (!isAnyUser) {
-                                            echo(new MessageRepPackage(null, null,
-                                                    new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
-                                                            .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
-                                            ));
-                                        }
-                                    } else
-                                        echo(new MessageRepPackage(null, null,
-                                                new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
-                                                        .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
-                                        ));
-                                }
-                            } else
-                                echo(new MessageRepPackage(null, null,
-                                        new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
-                                                .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
-                        } else if (messageRequestPackage
-                                .containsKey("/send")) {
-                            String message = messageRequestPackage.get("/send");
                             if (messageRequestPackage
                                     .containsKey("/user")) {
-                                String usernamePattern = messageRequestPackage.get("/user");
-                                ArrayList<String> users = new ArrayList<>(getUsers(usernamePattern, server.group));
-                                if (!users.isEmpty()) {
-                                    sendToUsers(users, new MessageRepPackage(username, null, message));
-                                    echo(new MessageRepPackage(null, null,
-                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("[")
-                                                    .fg(Ansi.Color.GREEN).a(username)
-                                                    .fg(Ansi.Color.YELLOW).a(" -> ")
-                                                    .fg(Ansi.Color.GREEN).a(users)
-                                                    .fg(Ansi.Color.YELLOW).a("]: ")
-                                                    .reset()
-                                                    .toString() + message)
-                                    );
-                                } else
-                                    echo(new MessageRepPackage(null, null,
-                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Users weren't found by pattern ")
-                                                    .fg(Ansi.Color.GREEN).a("'" + usernamePattern + "'").reset().toString()
-                                    ));
+                                displayUserFromGroup(messageRequestPackage.get("/user"),
+                                        groupPattern);
                             } else if (messageRequestPackage
-                                    .containsKey("/group")) {
-                                String groupPattern = messageRequestPackage.get("/group");
-                                ArrayList<String> groups = new ArrayList<>(getGroups(groupPattern));
-                                if (!groups.isEmpty()) {
-                                    sendToGroups(groups, new MessageRepPackage(username, null, message));
-                                } else
-                                    echo(new MessageRepPackage(null, null,
-                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Groups weren't found by pattern ")
-                                                    .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
-                            } else if (messageRequestPackage
-                                    .containsKey("/mygroup")) {
-                                String groupPattern = messageRequestPackage.get("/mygroup");
-                                ArrayList<String> ownGroups = new ArrayList<>(getOwnGroups(groupPattern));
-                                if (!ownGroups.isEmpty()) {
-                                    sendToGroups(ownGroups, new MessageRepPackage(username, null, message));
-                                } else
-                                    echo(new MessageRepPackage(null, null,
-                                            new Ansi().bold().fg(Ansi.Color.YELLOW).a("Own groups weren't found by pattern ")
-                                                    .fg(Ansi.Color.GREEN).a("'" + groupPattern + "'").reset().toString()));
+                                    .containsKey("/send")) {
+                                sendMessageToGroup(messageRequestPackage.get("/send"),
+                                        groupPattern);
+                            }
+                        } else if (messageRequestPackage
+                                .containsKey("/user")) {
+                            String usernamePattern = messageRequestPackage.get("/user");
+                            if (messageRequestPackage
+                                    .containsKey("/send")) {
+                                sendMessageToUser(messageRequestPackage.get("/send"),
+                                        usernamePattern);
                             }
                         }
                         break;
