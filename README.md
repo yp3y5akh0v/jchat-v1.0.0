@@ -13,5 +13,3 @@ For `User` simple make jar file and run it through the console. Enjoy!
 
 ### How to get a list of commands
 Type `/help` command
-
-*If you have any questions about this project or if you find bugs :) leave comments here or send me an email to <code>yuriy.peysakhov@gmail.com</code>*
